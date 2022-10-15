@@ -13,7 +13,7 @@ router.get('/', async function (req, res) {
   }
 });
 
-router.get('/:id', async function (req, res) {
+router.get('/:id(\\d+)', async function (req, res) {
   const sequelize = req.app.get('sequelize');
   try {
     const art = await sequelize.models.Artwork.findByPk(req.params.id);
