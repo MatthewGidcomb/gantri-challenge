@@ -3,7 +3,8 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var indexRouter = require('./routes/index');
+const { db, sequelize } = require('./db/models');
+var artRouter = require('./routes/art');
 var usersRouter = require('./routes/users');
 
 var app = express();
@@ -13,7 +14,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.set('sequelize', sequelize);
+
+app.use('/api/art', artRouter);
+app.use('/api/users', usersRouter);
 
 module.exports = app;
