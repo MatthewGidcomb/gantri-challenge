@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 
+const UserDTO = require('../dto/user');
+
 // get all users
 router.get('/', async function (req, res, next) {
   const sequelize = req.app.get('sequelize');
   try {
     const users = await sequelize.models.User.findAll();
-    res.json(users);
+    res.json(users.map((model) => UserDTO.fromModel(model)));
   } catch (e) {
     res.status(400).end(e.message);
   }
