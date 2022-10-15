@@ -14,6 +14,7 @@ module.exports = {
     }).then(function (data) {
       const NOW = new Date();
       return queryInterface.bulkInsert('Artworks', data.map((row) => ({
+        id: parseInt(row.id),
         title: row.title,
         artist: row.artist,
         year: parseInt(row.year) || null,
