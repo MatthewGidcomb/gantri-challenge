@@ -35,7 +35,8 @@ router.get('/', async function (req, res) {
     const art = await sequelize.models.Artwork.findAll({
       include: [
         { model: sequelize.models.Comment, include: sequelize.models.User }
-      ]
+      ],
+      order: [ 'id', [ sequelize.models.Comment, 'createdAt' ] ]
     });
     res.json(art.map((model) => ArtworkDTO.fromModel(model)));
   } catch (e) {
@@ -50,7 +51,8 @@ router.get('/:id(\\d+)', async function (req, res) {
     const art = await sequelize.models.Artwork.findByPk(req.params.id, {
       include: [
         { model: sequelize.models.Comment, include: sequelize.models.User }
-      ]
+      ],
+      order: [ [ sequelize.models.Comment, 'createdAt' ] ]
     });
     if (art) {
       res.json(ArtworkDTO.fromModel(art));
