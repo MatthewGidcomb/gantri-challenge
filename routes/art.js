@@ -66,9 +66,11 @@ router.post('/:id(\\d+)/comments', async function (req, res) {
 
   const artworkId = req.params.id;
 
+  let artwork;
+
   // find artwork to be commented on, and make sure it exists
   try {
-    const artwork = await sequelize.models.Artwork.findByPk(artworkId);
+    artwork = await sequelize.models.Artwork.findByPk(artworkId);
     if (!artwork) {
       debug(`artwork ${artworkId} not found`);
       return res.status(404).json({ message: 'artwork not found' });
