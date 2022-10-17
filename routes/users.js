@@ -7,7 +7,7 @@ const UserDTO = require('../dto/user');
 
 const userSchema = Joi.object({
   name: Joi.string().max(255).required(),
-  age: Joi.integer().min(1).required(),
+  age: Joi.number().integer().min(1).required(),
   location: Joi.string().max(255).required()
 });
 
