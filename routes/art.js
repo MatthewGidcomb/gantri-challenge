@@ -1,7 +1,28 @@
 const express = require('express');
 const router = express.Router();
+const debug = require('debug')('gantri-challenge:app:art');
+const Joi = require('joi');
+const { ForeignKeyConstraintError, UniqueConstraintError } = require('sequelize');
 
 const ArtworkDTO = require('../dto/artwork');
+
+const commentSchema = Joi.object({
+  content: Joi.string().required(),
+  userID: Joi.number().integer().min(1),
+  name: Joi.string().max(255).when('userID', { not: Joi.any(), then: Joi.required() })
+});
+
+function parseAndValidateCommentBody (body) {
+  const { error, value } = commentSchema.validate(body);
+
+  // note: spec uses `userID` but we use `userId` in DB for consistency
+  if (value && Object.prototype.hasOwnProperty.call(value, 'userID')) {
+    value.userId = value.userID;
+    delete value.userID;
+  }
+
+  return { error, value };
+}
 
 // get all artwork
 router.get('/', async function (req, res) {
@@ -14,8 +35,8 @@ router.get('/', async function (req, res) {
     });
     res.json(art.map((model) => ArtworkDTO.fromModel(model)));
   } catch (e) {
-    res.status(400);
-    res.end(e.message);
+    debug(e);
+    res.status(500).json({ message: 'An unknown error occurred' });
   }
 });
 
@@ -30,43 +51,59 @@ router.get('/:id(\\d+)', async function (req, res) {
     if (art) {
       res.json(ArtworkDTO.fromModel(art));
     } else {
-      res.status(404).end('404 Not found');
+      debug(`artwork ${res.params.id} not found`);
+      res.status(404).json({ message: 'artwork not found' });
     }
   } catch (e) {
-    res.status(400).end(e.message);
+    debug(e);
+    res.status(400).json({ message: e.message });
   }
 });
 
 // create a new comment
 router.post('/:id(\\d+)/comments', async function (req, res) {
-  const { content, name, userID: userId } = req.body;
   const sequelize = req.app.get('sequelize');
 
-  const artwork = await sequelize.models.Artwork.findByPk(req.params.id);
+  const artworkId = req.params.id;
 
-  if (!artwork) {
-    return res.status(404).end(`artwork ${req.params.id} not found`);
+  // find artwork to be commented on, and make sure it exists
+  try {
+    const artwork = await sequelize.models.Artwork.findByPk(artworkId);
+    if (!artwork) {
+      debug(`artwork ${artworkId} not found`);
+      return res.status(404).json({ message: 'artwork not found' });
+    }
+  } catch (e) {
+    return res.status(400).json({ message: 'unable to retrieve artwork' });
   }
 
-  // simple case: content and userID
-  // but... what should happen with a name + userID specified?
-  if (typeof content === 'string' && content.length > 0 && typeof userId === 'number') {
-    try {
-      await artwork.createComment({ content, userId, name: null });
-    } catch (e) {
-      res.status(422).end(e.message);
-    }
-    return res.status(204).end();
-  } else if (typeof content === 'string' && content.length > 0 && typeof name === 'string') {
-    // alternate case, we'll call this a "guest" user
-    try {
-      await artwork.createComment({ content, name, userId: null });
-    } catch (e) {
-      res.status(422).end(e.message);
-    }
-    return res.status(204).end();
+  // validate the request body
+  const { error, value: body } = parseAndValidateCommentBody(req.body);
+
+  if (error) {
+    const messages = error.details.map((d) => d.message).join(', ');
+    debug(`error(s) parsing body: ${messages}`);
+    return res.status(422).json({ message: `invalid request: ${messages}` });
   } else {
-    return res.status(422).end('invalid body');
+    try {
+      await artwork.createComment(body);
+      return res.status(204).end();
+    } catch (e) {
+      if (e instanceof ForeignKeyConstraintError) {
+        // because existence of artwork is already confirmed, it's safe to
+        // assume that this error is related to the User ID
+        debug(`user ${body.userId} does not exist`);
+        return res.status(422).json({ message: 'user does not exist' });
+      } else if (e instanceof UniqueConstraintError) {
+        // similarly, it's safe to assume this is related to the unique guest
+        // user constraint because that's the only such constraint
+        debug(`guest user ${body.name} has already commented on ${artworkId}`);
+        res.status(422).json({ message: 'a non-user with this name has already commented on this work' });
+      } else {
+        debug(`error(s) creating comment: ${e.message}`);
+        return res.status(422).json({ message: e.message });
+      }
+    }
   }
 });
 
