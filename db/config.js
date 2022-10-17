@@ -8,5 +8,11 @@ module.exports = {
     'database': process.env.DB_DATABASE || 'tate-modern',
     'username': process.env.DB_USER,
     'password': process.env.DB_PW
+  },
+  'test': {
+    'dialect': 'sqlite',
+    'storage': ':memory:',
+    // Sequelize's query logging makes it almost impossible to read test output
+    'logging': false
   }
 };

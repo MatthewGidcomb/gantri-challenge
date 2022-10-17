@@ -25,7 +25,6 @@ router.get('/', async function (req, res, next) {
 
 // create a new user
 router.post('/', async function (req, res, next) {
-  const { name, age, location } = req.body;
   const sequelize = req.app.get('sequelize');
 
   const { error, value: body } = userSchema.validate(req.body);

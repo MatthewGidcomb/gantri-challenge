@@ -8,17 +8,21 @@ const ArtworkDTO = require('../dto/artwork');
 
 const commentSchema = Joi.object({
   content: Joi.string().required(),
-  userID: Joi.number().integer().min(1),
-  name: Joi.string().max(255).when('userID', { not: Joi.any(), then: Joi.required() })
-});
+  // note: spec uses `userID` but we use `userId` in DB for consistency
+  userId: Joi.number().integer().min(1),
+  // userId is optional, but if not specified then name is required
+  name: Joi.string().max(255).when('userId', {
+    is: Joi.any().valid(null),
+    then: Joi.required()
+  })
+}).rename('userID', 'userId');
 
 function parseAndValidateCommentBody (body) {
   const { error, value } = commentSchema.validate(body);
 
-  // note: spec uses `userID` but we use `userId` in DB for consistency
-  if (value && Object.prototype.hasOwnProperty.call(value, 'userID')) {
-    value.userId = value.userID;
-    delete value.userID;
+  // if a registered user is commenting, we can (and should) ignore the specified name
+  if (value && Object.prototype.hasOwnProperty.call(value, 'userId')) {
+    delete value.name;
   }
 
   return { error, value };
@@ -51,7 +55,7 @@ router.get('/:id(\\d+)', async function (req, res) {
     if (art) {
       res.json(ArtworkDTO.fromModel(art));
     } else {
-      debug(`artwork ${res.params.id} not found`);
+      debug(`artwork ${req.params.id} not found`);
       res.status(404).json({ message: 'artwork not found' });
     }
   } catch (e) {
@@ -76,6 +80,7 @@ router.post('/:id(\\d+)/comments', async function (req, res) {
       return res.status(404).json({ message: 'artwork not found' });
     }
   } catch (e) {
+    debug(e.message);
     return res.status(400).json({ message: 'unable to retrieve artwork' });
   }
 
