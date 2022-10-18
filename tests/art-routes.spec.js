@@ -143,9 +143,9 @@ describe('Art', function () {
               const body = res.body;
               const comments = body.comments;
               expect(comments).to.have.lengthOf(2);
+              expect(comments[0].userID).to.equal(userId);
+              expect(comments[0].name).to.equal(user.name);
               expect(comments[1].userID).to.equal(userId);
-              expect(comments[1].userID).to.equal(userId);
-              expect(comments[1].name).to.equal(user.name);
               expect(comments[1].name).to.equal(user.name);
             });
         });
@@ -165,20 +165,20 @@ describe('Art', function () {
 
     it('ignores name when userID is provided', function () {
       return request(app)
-      .post(`/api/art/${artId}/comments`)
-      .send({ ...userComment, name: 'Ignored' })
-      .expect(204)
-      .then(async function () {
-        await request(app)
-          .get(`/api/art/${artId}`)
-          .expect(function (res) {
-            const body = res.body;
-            const comments = body.comments;
-            expect(comments).to.have.lengthOf(1);
-            expect(comments[0].userID).to.equal(userId);
-            expect(comments[0].name).to.equal(user.name);
-          });
-      });
+        .post(`/api/art/${artId}/comments`)
+        .send({ ...userComment, name: 'Ignored' })
+        .expect(204)
+        .then(async function () {
+          await request(app)
+            .get(`/api/art/${artId}`)
+            .expect(function (res) {
+              const body = res.body;
+              const comments = body.comments;
+              expect(comments).to.have.lengthOf(1);
+              expect(comments[0].userID).to.equal(userId);
+              expect(comments[0].name).to.equal(user.name);
+            });
+        });
     });
 
     it('rejects invalid requests', function () {
@@ -208,6 +208,6 @@ describe('Art', function () {
         .post(`/api/art/2/comments`)
         .send({ content: 'oops', userID: 1 })
         .expect(404);
-    })
+    });
   });
 });
