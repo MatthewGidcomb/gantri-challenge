@@ -28,7 +28,10 @@ function parseAndValidateCommentBody (body) {
   return { error, value };
 }
 
-// get all artwork
+/**
+ * Get all artworks
+ * Includes comments, ordered by creation
+ */
 router.get('/', async function (req, res) {
   const sequelize = req.app.get('sequelize');
   try {
@@ -45,6 +48,10 @@ router.get('/', async function (req, res) {
   }
 });
 
+/**
+ * Get specific artwork by ID
+ * Includes comments, ordered by creation
+ */
 router.get('/:id(\\d+)', async function (req, res) {
   const sequelize = req.app.get('sequelize');
   try {
@@ -66,7 +73,19 @@ router.get('/:id(\\d+)', async function (req, res) {
   }
 });
 
-// create a new comment
+/**
+ * Create comment on artwork
+ * Body:
+ * { "content": "string", "userID": int }
+ * OR
+ * { "content": "string", "name": "string" }
+ * The first form allows registered users to leave a comment. They may make as
+ * many comments on a piece of art as they wish.
+ * The second form allows unregistered "guest" users to leave a comment. A
+ * guest user may only leave one comment per artwork under a given name.
+ * If both a name and userID are provided, the userID takes precedence, and the
+ * name is ignored.
+ */
 router.post('/:id(\\d+)/comments', async function (req, res) {
   const sequelize = req.app.get('sequelize');
 
@@ -107,7 +126,9 @@ router.post('/:id(\\d+)/comments', async function (req, res) {
         // similarly, it's safe to assume this is related to the unique guest
         // user constraint because that's the only such constraint
         debug(`guest user ${body.name} has already commented on ${artworkId}`);
-        res.status(422).json({ message: 'a non-user with this name has already commented on this work' });
+        res.status(422).json({
+          message: 'a non-user with this name has already commented on this work'
+        });
       } else {
         debug(`error(s) creating comment: ${e.message}`);
         return res.status(422).json({ message: e.message });

@@ -11,7 +11,9 @@ const userSchema = Joi.object({
   location: Joi.string().max(255).required()
 });
 
-// get all users
+/**
+ * Get all users
+ */
 router.get('/', async function (req, res, next) {
   const sequelize = req.app.get('sequelize');
   try {
@@ -23,7 +25,11 @@ router.get('/', async function (req, res, next) {
   }
 });
 
-// create a new user
+/**
+ * Create user
+ * Body:
+ * { "name": "string" "age": int, "location": "string" }
+ */
 router.post('/', async function (req, res, next) {
   const sequelize = req.app.get('sequelize');
 
