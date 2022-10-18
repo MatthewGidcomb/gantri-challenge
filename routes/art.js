@@ -4,6 +4,7 @@ const debug = require('debug')('gantri-challenge:app:art');
 const { ForeignKeyConstraintError, UniqueConstraintError } = require('sequelize');
 
 const ArtworkDTO = require('../dto/artwork');
+const CommentDTO = require('../dto/comment');
 const CommentSchema = require('../dto/comment.schema');
 
 /**
@@ -91,8 +92,11 @@ router.post('/:id(\\d+)/comments', async function (req, res) {
     return res.status(422).json({ message: `invalid request: ${messages}` });
   } else {
     try {
-      await artwork.createComment(body);
-      return res.status(204).end();
+      const newComment = await artwork.createComment(body);
+      // reload necessary to populate user association, necessary to properly
+      // populate name in the response
+      await newComment.reload({ include: [ sequelize.models.User ] });
+      return res.status(201).json(CommentDTO.fromModel(newComment));
     } catch (e) {
       if (e instanceof ForeignKeyConstraintError) {
         // because existence of artwork is already confirmed, it's safe to

@@ -32,7 +32,13 @@ describe('User', function () {
       return request(app)
         .post('/api/users')
         .send({ ...user2 })
-        .expect(204)
+        .expect(201)
+        .expect(function (res) {
+          const body = res.body;
+          expect(body).to.be.an('object');
+          expect(body).to.haveOwnProperty('id');
+          expect(body.name).to.equal(user2.name);
+        })
         .then(async function () {
           const sequelize = app.get('sequelize');
           const users = await sequelize.models.User.findAll();

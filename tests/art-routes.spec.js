@@ -96,7 +96,15 @@ describe('Art', function () {
       return request(app)
         .post(`/api/art/${artId}/comments`)
         .send({ ...userComment })
-        .expect(204)
+        .expect(201)
+        .expect(function (res) {
+          const body = res.body;
+          expect(body).to.be.an('object');
+          expect(body).to.haveOwnProperty('id');
+          expect(body.content).to.equal(userComment.content);
+          expect(body.userID).to.equal(userComment.userID);
+          expect(body.name).to.equal(user.name);
+        })
         .then(async function () {
           await request(app)
             .get(`/api/art/${artId}`)
@@ -115,7 +123,15 @@ describe('Art', function () {
       return request(app)
         .post(`/api/art/${artId}/comments`)
         .send({ ...guestComment })
-        .expect(204)
+        .expect(201)
+        .expect(function (res) {
+          const body = res.body;
+          expect(body).to.be.an('object');
+          expect(body).to.haveOwnProperty('id');
+          expect(body.content).to.equal(guestComment.content);
+          expect(body).not.to.haveOwnProperty('userID');
+          expect(body.name).to.equal(guestComment.name);
+        })
         .then(async function () {
           await request(app)
             .get(`/api/art/${artId}`)
@@ -135,7 +151,7 @@ describe('Art', function () {
       return request(app)
         .post(`/api/art/${artId}/comments`)
         .send({ ...userComment })
-        .expect(204)
+        .expect(201)
         .then(async function () {
           await request(app)
             .get(`/api/art/${artId}`)
@@ -167,7 +183,7 @@ describe('Art', function () {
       return request(app)
         .post(`/api/art/${artId}/comments`)
         .send({ ...userComment, name: 'Ignored' })
-        .expect(204)
+        .expect(201)
         .then(async function () {
           await request(app)
             .get(`/api/art/${artId}`)

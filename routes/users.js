@@ -34,10 +34,8 @@ router.post('/', async function (req, res, next) {
     return res.status(422).json({ message: `invalid request: ${messages}` });
   } else {
     try {
-      await sequelize.models.User.create(body);
-      // normally we'd want to use 201, but there isn't an endpoint for
-      // retrieving the individual user
-      return res.status(204).end();
+      const newUser = await sequelize.models.User.create(body);
+      return res.status(201).json(UserDTO.fromModel(newUser));
     } catch (e) {
       return res.status(422).end(e.message);
     }
