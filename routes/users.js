@@ -1,16 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const debug = require('debug')('gantri-challenge:app:user');
-const Joi = require('joi');
 
 const UserDTO = require('../dto/user');
-
-const userSchema = Joi.object({
-  name: Joi.string().max(255).required(),
-  age: Joi.number().integer().min(1).required(),
-  location: Joi.string().max(255).required()
-});
-
+const UserSchema = require('../dto/user.schema');
 /**
  * Get all users
  */
@@ -33,7 +26,7 @@ router.get('/', async function (req, res, next) {
 router.post('/', async function (req, res, next) {
   const sequelize = req.app.get('sequelize');
 
-  const { error, value: body } = userSchema.validate(req.body);
+  const { error, value: body } = UserSchema.validate(req.body);
 
   if (error) {
     const messages = error.details.map((d) => d.message).join(', ');

@@ -1,32 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const debug = require('debug')('gantri-challenge:app:art');
-const Joi = require('joi');
 const { ForeignKeyConstraintError, UniqueConstraintError } = require('sequelize');
 
 const ArtworkDTO = require('../dto/artwork');
-
-const commentSchema = Joi.object({
-  content: Joi.string().required(),
-  // note: spec uses `userID` but we use `userId` in DB for consistency
-  userId: Joi.number().integer().min(1),
-  // userId is optional, but if not specified then name is required
-  name: Joi.string().max(255).when('userId', {
-    is: Joi.any().valid(null),
-    then: Joi.required()
-  })
-}).rename('userID', 'userId');
-
-function parseAndValidateCommentBody (body) {
-  const { error, value } = commentSchema.validate(body);
-
-  // if a registered user is commenting, we can (and should) ignore the specified name
-  if (value && Object.prototype.hasOwnProperty.call(value, 'userId')) {
-    delete value.name;
-  }
-
-  return { error, value };
-}
+const CommentSchema = require('../dto/comment.schema');
 
 /**
  * Get all artworks
@@ -105,8 +83,7 @@ router.post('/:id(\\d+)/comments', async function (req, res) {
     return res.status(400).json({ message: 'unable to retrieve artwork' });
   }
 
-  // validate the request body
-  const { error, value: body } = parseAndValidateCommentBody(req.body);
+  const { error, value: body } = CommentSchema.validate(req.body);
 
   if (error) {
     const messages = error.details.map((d) => d.message).join(', ');
